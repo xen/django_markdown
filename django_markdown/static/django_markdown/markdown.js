@@ -8,12 +8,12 @@
 
 // mIu nameSpace to avoid conflict.
 miu = (function($){
-    
+
     var editors = {};
-    
+
     function getCookie(name) {
         var value = null;
-        
+
         if (document.cookie && document.cookie != '') {
             var cookies = document.cookie.split(';');
             for (var i = 0; i < cookies.length; i++) {
@@ -25,10 +25,10 @@ miu = (function($){
                 }
             }
         }
-        
+
         return value;
     }
-    
+
     /*
      * Work around bug in python-markdown where header underlines must be at least 3 chars
      * */
@@ -41,28 +41,29 @@ miu = (function($){
         }
         return '\n'+heading;
     }
-    
+
     /*
      * Default editors configuration
      * */
     var settings = {
         onShiftEnter:   {keepDefault:false, openWith:'\n\n'},
         nameSpace:     'markdown',
-        
-        /* 
+
+        /*
          * MarkDown tags
          * http://en.wikipedia.org/wiki/Markdown
          * http://daringfireball.net/projects/markdown/
          * */
-        
+
         markupSet: [
-            {name:'First Level Heading', key:'1', placeHolder:'Your title here...', closeWith:function(markItUp) { return markdownTitle(markItUp, '=') }, className: 'miu-icon miu-icon-h1' },
-            {name:'Second Level Heading', key:'2', placeHolder:'Your title here...', closeWith:function(markItUp) { return markdownTitle(markItUp, '-') }, className: 'miu-icon miu-icon-h2' },
+            {name:'First Level Heading', key:'1', openWith:'# ', placeHolder:'Your title here...', className: 'miu-icon miu-icon-h1' },
+            {name:'Second Level Heading', key:'1', openWith:'## ', placeHolder:'Your title here...', className: 'miu-icon miu-icon-h2' },
+
             {name:'Heading 3', key:'3', openWith:'### ', placeHolder:'Your title here...', className: 'miu-icon miu-icon-h3' },
             {name:'Heading 4', key:'4', openWith:'#### ', placeHolder:'Your title here...', className: 'miu-icon miu-icon-h4' },
             {name:'Heading 5', key:'5', openWith:'##### ', placeHolder:'Your title here...', className: 'miu-icon miu-icon-h5' },
             {name:'Heading 6', key:'6', openWith:'###### ', placeHolder:'Your title here...', className: 'miu-icon miu-icon-h6' },
-            {separator:'---------------' },     
+            {separator:'---------------' },
             {name:'Bold', key:'B', openWith:'**', closeWith:'**', className: 'miu-icon miu-icon-bold'},
             {name:'Italic', key:'I', openWith:'_', closeWith:'_', className: 'miu-icon miu-icon-italic'},
             {separator:'---------------' },
@@ -73,30 +74,41 @@ miu = (function($){
             {separator:'---------------' },
             {name:'Picture', key:'P', replaceWith:'![[![Alternative text]!]]([![Url:!:http://]!] "[![Title]!]")', className: 'miu-icon miu-icon-picture'},
             {name:'Link', key:'L', openWith:'[', closeWith:']([![Url:!:http://]!] "[![Title]!]")', placeHolder:'Your text to link here...', className: 'miu-icon miu-icon-link' },
-            {separator:'---------------'},  
-            {name:'Quotes', openWith:'> ', className: 'miu-icon miu-icon-quotes'},
+            {separator:'---------------'},
+            {name:'Quotes', openWith:'> ', placeHolder:"quote here...", className: 'miu-icon miu-icon-quotes'},
             {name:'Code Block / Code', openWith:'(!(\t|!|`)!)', closeWith:'(!(`)!)', className: 'miu-icon miu-icon-code'},
+            {name:'Typogrpaphy', className: 'miu-icon miu-icon-typo',
+              replaceWith:function(markItUp) {
+                console.log(markItUp);
+                if (!markItUp.selection){
+                  alert('Select block');
+                  return false;
+                }
+                return Typographus_Lite_UTF8.process(markItUp.selection);
+              }
+            },
+
             {separator:'---------------'},
             {name:'Preview', call:'preview', className:"preview", className: 'miu-icon miu-icon-preview'}
         ]
     };
-    
+
     /*
      * Add "X-CSRFToken" header to every AJAX request within current domain
      * */
     $('html').ajaxSend(function(event, xhr, settings) {
         var isLocal = !settings.url.match(/^https?:\/\/([^\/]+)/i);
-        
+
         if(isLocal || RegExp.$1 == document.location.host){
             xhr.setRequestHeader("X-CSRFToken", getCookie('csrftoken'));
         }
     });
-    
+
     /*
      * Single markItUp'ed textarea class
      * */
     function Editor(textareaId, extraSettings){
-        
+
         /*
          * Editor instance: default mIu settings extended with what you passed to miu.init(..., extraSettings)
          * */
@@ -111,18 +123,18 @@ miu = (function($){
                 markItUp(editorSettings);
             }
         }
-        
+
         /*
          * Dynamically adds button to the editor at index position
          * */
         function addButton(conf, index){
             var index = (!index || index > editorSettings.markupSet.length ? editorSettings.markupSet.length : index);
-            editorSettings.markupSet = $.merge(editorSettings.markupSet.slice(0, index), 
-                                               $.merge([conf], 
+            editorSettings.markupSet = $.merge(editorSettings.markupSet.slice(0, index),
+                                               $.merge([conf],
                                                        editorSettings.markupSet.slice(index)));
             init();
         }
-        
+
         /*
          * Dynamically removes button from the editor at index position
          * */
@@ -131,7 +143,7 @@ miu = (function($){
                                                editorSettings.markupSet.slice(index + 1));
             init();
         }
-        
+
         /*
          * Get/set editor settings
          * */
@@ -142,17 +154,17 @@ miu = (function($){
             }
             return editorSettings;
         }
-        
+
         /* ----- initializing ------ */
-        
+
         this.addButton = addButton;
         this.removeButton = removeButton;
         this.config = config;
         this.init = init;
-        
+
         init();
     }
-    
+
     return {
         /*
          * Get/set default mIu settings
@@ -163,15 +175,15 @@ miu = (function($){
             }
             return settings;
         },
-        
+
         /*
-         * Returns editor instance by textarea id, 
+         * Returns editor instance by textarea id,
          * if no textareaId passed then all instances will be returned
          * */
         editors: function(textareaId){
             return textareaId ? editors[textareaId] : editors;
         },
-                
+
         /*
          * Shortcut for initializing editor
          * */
@@ -180,7 +192,7 @@ miu = (function($){
                 editors[textareaId] = new Editor(textareaId, extraSettings);
             });
         }
-        
+
     }
-    
+
 })(jQuery || django.jQuery);
