@@ -9,3 +9,4 @@ sitegen.egg-info
 *.orig
 *~
 docs/_*
+django_markdown.egg-info
